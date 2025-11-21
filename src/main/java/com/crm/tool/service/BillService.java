@@ -1,0 +1,18 @@
+package com.crm.tool.service;
+
+import com.crm.tool.POJO.Bill;
+import org.springframework.http.ResponseEntity;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+public interface BillService {
+
+    ResponseEntity<String> generateReport(Map<String, Object> requestMap);
+    ResponseEntity<List<Bill>> getBills();
+    ResponseEntity<byte[]> getPdf(Map<String, Object> requestMap);
+    ResponseEntity<String> delete(Integer id);
+
+    List<String> getAllCategory();
+}

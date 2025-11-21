@@ -1,0 +1,12 @@
+package com.crm.tool.dao;
+
+import com.crm.tool.POJO.Category;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface CategoryDao extends JpaRepository<Category, Integer> {
+
+    List<Category> getAllCategory();
+
+}
