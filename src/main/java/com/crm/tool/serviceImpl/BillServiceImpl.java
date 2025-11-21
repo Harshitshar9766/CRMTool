@@ -1,5 +1,6 @@
-package com.crm.tool.restImpl;
+package com.crm.tool.serviceImpl;
 
+import com.crm.tool.JWT.CustomerUserDetailsService;
 import com.crm.tool.JWT.JwtFilter;
 import com.crm.tool.JWT.JwtUtil;
 import com.crm.tool.POJO.Bill;
@@ -9,7 +10,9 @@ import com.crm.tool.consents.CafeConstants;
 import com.crm.tool.dao.BillDao;
 import com.crm.tool.service.BillService;
 import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.io.IOUtils;
 import org.json.JSONArray;
@@ -19,31 +22,41 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static com.itextpdf.text.FontFactory.getFont;
+
 @Slf4j
 @Service
-public class BillServiceImpl  implements BillService {
+public class BillServiceImpl implements BillService {
 
 
-@Autowired
+    @Autowired
     BillDao billDao;
 
-@Autowired
+    @Autowired
     AuthenticationManager authenticationManager;
 
-@Autowired
+    @Autowired
     JwtUtil jwtUtil;
-@Autowired
+
+    @Autowired
     JwtFilter jwtFilter;
 
-@Autowired
+    @Autowired
+    CustomerUserDetailsService customerUserDetailsService;
+
+    @Autowired
     EmailUtil emailUtil;
+
 
     @Override
     public ResponseEntity<String> generateReport(Map<String, Object> requestMap) {
@@ -62,15 +75,9 @@ public class BillServiceImpl  implements BillService {
                 String data = "Name: " + requestMap.get("name") + "\n" + "Contact Number: " + requestMap.get("contactNumber") +
                         "\n" + "Email: " + requestMap.get("email") + "\n" + "Payment Method: " + requestMap.get("paymentMethod");
                 Document document = new Document();
-
-                String filepath = CafeConstants.STORE_LOCATION + "\\" + filename + ".pdf";
-                PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(filepath));
+                PdfWriter.getInstance(document, new FileOutputStream(CafeConstants.STORE_LOCATION + "\\" + filename + ".pdf"));
                 document.open();
-
-//                PdfWriter.getInstance(document, new FileOutputStream(CafeConstants.STORE_LOCATION + "\\" + filename + ".pdf"));
-//                document.open();
-
-                setRectaangleInPdf(writer);
+                setRectaangleInPdf(document);
 
                 // print pdf Header
                 Paragraph chunk = new Paragraph("Cafe Management System", getFont("Header"));
@@ -84,88 +91,30 @@ public class BillServiceImpl  implements BillService {
                 // Create table in pdf to print data
                 PdfPTable table = new PdfPTable(5);
                 table.setWidthPercentage(100);
-
-
-                JSONArray jsonArray = null;
                 addTableHeader(table);
-                // Print table data
-               jsonArray = CafeUtil.getJsonArrayFromString((String) requestMap.get("productDetails"));
 
+
+                // Print table data
+                JSONArray jsonArray = CafeUtil.getJsonArrayFromString((String) requestMap.get("productDetails"));
                 for (int i = 0; i < jsonArray.length(); i++) {
-                    Map<String, Object> productData = CafeUtil.getMapFromJson(jsonArray.getString(i));
-                    addRows(table, productData);
+                    addRows(table, CafeUtil.getMapFromJson(jsonArray.getString(i)));
                 }
 
                 document.add(table);
 
                 // print pdf Footer
-                Paragraph footer = new Paragraph("Total : " + requestMap.get("totalAmount") + "\n"
+                Paragraph footer = new Paragraph("Total : " + requestMap.get("total") + "\n"
                         + "Thank you for visiting our website.", getFont("Data"));
                 document.add(footer);
                 document.close();
                 return new ResponseEntity<>("{\"uuid\":\"" + filename + "\"}", HttpStatus.OK);
             }
-            return CafeUtil.getResponseEntity("Required data not found", HttpStatus.BAD_REQUEST);
+            return CafeUtil.getResponeEntity("Required data not found", HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return CafeUtil.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
-
+        return CafeUtil.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-
-    private Font getFont(String type) {
-        log.info("Inside getFont");
-        switch (type) {
-            case "Header":
-                Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLDOBLIQUE, 18, BaseColor.BLACK);
-                headerFont.setStyle(Font.BOLD);
-                return headerFont;
-            case "Data":
-                Font dareFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 11, BaseColor.BLACK);
-                dareFont.setStyle(Font.BOLD);
-                return dareFont;
-            default:
-                return new Font();
-        }
-    }
-
-    private void addRows(PdfPTable table, Map<String, Object> data) {
-        log.info("Inside addRows");
-        table.addCell((String) data.get("name"));
-        table.addCell((String) data.get("category"));
-        table.addCell((String) data.get("quantity"));
-        table.addCell(Double.toString((Double) data.get("price")));
-        table.addCell(Double.toString((Double) data.get("total")));
-    }
-
-
-    private void setRectaangleInPdf(PdfWriter writer) {
-        log.info("Inside setRectaangleInPdf.");
-//        Rectangle rectangle = new Rectangle(577, 825, 18, 15);
-//        rectangle.enableBorderSide(1);
-//        rectangle.enableBorderSide(2);
-//        rectangle.enableBorderSide(4);
-//        rectangle.enableBorderSide(8);
-//        rectangle.setBorderColor(BaseColor.BLACK);
-//        rectangle.setBorderWidth(1);
-//        document.add(rectangle);
-
-        PdfContentByte canvas = writer.getDirectContent();
-        Rectangle rectangle = new Rectangle(18, 15, 577, 825);
-
-        rectangle.setBorder(Rectangle.BOX); // draw all sides
-        rectangle.setBorderWidth(1);
-        rectangle.setBorderColor(BaseColor.BLACK);
-        canvas.rectangle(rectangle);
-
-
-        // Get the canvas to draw directly on the PDF
-
-    }
-
-
-
 
     private void addTableHeader(PdfPTable table) {
         log.info("Inside addTableHeader");
@@ -182,45 +131,41 @@ public class BillServiceImpl  implements BillService {
                 });
     }
 
+    private void setRectaangleInPdf(Document document) throws DocumentException {
+        log.info("Inside setRectaangleInPdf.");
+        Rectangle rectangle = new Rectangle(577, 825, 18, 15);
+        rectangle.enableBorderSide(1);
+        rectangle.enableBorderSide(2);
+        rectangle.enableBorderSide(4);
+        rectangle.enableBorderSide(8);
+        rectangle.setBorderColor(BaseColor.BLACK);
+        rectangle.setBorderWidth(1);
+        document.add(rectangle);
+    }
+
+
+
+    private void addRows(PdfPTable table, Map<String, Object> data) {
+        log.info("Inside addRows");
+        table.addCell((String) data.get("name"));
+        table.addCell((String) data.get("category"));
+        table.addCell((String) data.get("quantity"));
+        table.addCell(Double.toString((Double) data.get("price")));
+        table.addCell(Double.toString((Double) data.get("total")));
+    }
 
     private void insertBill(Map<String, Object> requestMap) {
         try {
-              Bill bill = new Bill();
-
-//            bill.setUuid((String) requestMap.get("uuid"));
-//            bill.setName((String) requestMap.get("name"));
-//            bill.setEmail((String) requestMap.get("email"));
-//            bill.setContactNumber((String) requestMap.get("contactNumber"));
-//            bill.setPaymentMethod((String) requestMap.get("paymentMethod"));
-//            bill.setTotal(Integer.parseInt((String) requestMap.get("totalAmount")));
-//            bill.setProductDetails((String) requestMap.get("productDetails"));
-
-            bill.setUuid(String.valueOf(requestMap.get("uuid")));
-            bill.setName(String.valueOf(requestMap.get("name")));
-            bill.setEmail(String.valueOf(requestMap.get("email")));
-            bill.setContactNumber(String.valueOf(requestMap.get("contactNumber")));
-            bill.setPaymentMethod(String.valueOf(requestMap.get("paymentMethod")));
-
-
-            Object totalObj = requestMap.get("totalAmount");
-            int total = 0;
-            if (totalObj instanceof Number) {
-                total = ((Number) totalObj).intValue();
-            } else if (totalObj instanceof String) {
-                total = Integer.parseInt((String) totalObj);
-            }
-            bill.setTotal(total);
-
-            bill.setProductDetails(String.valueOf(requestMap.get("productDetails")));
+            Bill bill = new Bill();
+            bill.setUuid((String) requestMap.get("uuid"));
+            bill.setName((String) requestMap.get("name"));
+            bill.setEmail((String) requestMap.get("email"));
+            bill.setContactNumber((String) requestMap.get("contactNumber"));
+            bill.setPaymentMethod((String) requestMap.get("paymentMethod"));
+            bill.setTotal(Integer.parseInt((String) requestMap.get("total")));
+            bill.setProductDetails((String) requestMap.get("productDetails"));
             bill.setCreatedBy(jwtFilter.getCurrentUsername());
             billDao.save(bill);
-
-//            bill.setCreatedBy(jwtFilter.getCurrentUsername());
-//            billDao.save(bill);
-
-
-
-
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -232,7 +177,7 @@ public class BillServiceImpl  implements BillService {
                 requestMap.containsKey("email") &&
                 requestMap.containsKey("paymentMethod") &&
                 requestMap.containsKey("productDetails") &&
-                requestMap.containsKey("totalAmount");
+                requestMap.containsKey("total");
     }
 
 
@@ -246,6 +191,7 @@ public class BillServiceImpl  implements BillService {
         }
         return new ResponseEntity<>(list, HttpStatus.OK);
     }
+
 
     @Override
     public ResponseEntity<byte[]> getPdf(Map<String, Object> requestMap) {
@@ -282,29 +228,23 @@ public class BillServiceImpl  implements BillService {
     }
 
     @Override
-            public ResponseEntity<String> delete(Integer id){
-                try {
-                    if (jwtFilter.isAdmin()) {
-                        Optional optional = billDao.findById(id);
-                        if (!optional.isEmpty()) {
-                            billDao.deleteById(id);
-                            //System.out.println("Product is deleted successfully");
-                            return CafeUtil.getResponseEntity("Bill is deleted successfully", HttpStatus.OK);
-                        }
-                        //System.out.println("Product id doesn't exist");
-                        return CafeUtil.getResponseEntity("Bill id doesn't exist", HttpStatus.OK);
-                    } else {
-                        return CafeUtil.getResponseEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+    public ResponseEntity<String> delete(Integer id) {
+        try {
+            if (jwtFilter.isAdmin()) {
+                Optional optional = billDao.findById(id);
+                if (!optional.isEmpty()) {
+                    billDao.deleteById(id);
+                    //System.out.println("Product is deleted successfully");
+                    return CafeUtil.getResponeEntity("Bill is deleted successfully", HttpStatus.OK);
                 }
-                return CafeUtil.getResponseEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
+                //System.out.println("Product id doesn't exist");
+                return CafeUtil.getResponeEntity("Bill id doesn't exist", HttpStatus.OK);
+            } else {
+                return CafeUtil.getResponeEntity(CafeConstants.UNAUTHORIZED_ACCESS, HttpStatus.UNAUTHORIZED);
             }
-
-    @Override
-    public List<String> getAllCategory() {
-        return billDao.getAllCategory();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return CafeUtil.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
 }

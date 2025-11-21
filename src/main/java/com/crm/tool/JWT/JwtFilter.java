@@ -33,8 +33,10 @@ public class JwtFilter  extends OncePerRequestFilter {
 String path = httpServletRequest.getServletPath();
         if(path.contains("login") ||
                 path.contains("signup")
-        || path.contains("forgotPassword")){
+        || path.contains("forgotPassword")
+        || path.contains("generateReport")){
             filterChain.doFilter(httpServletRequest, httpServletResponse);
+            return;
         }
         else {
 String authorizationHeader = httpServletRequest.getHeader("Authorization");
@@ -51,8 +53,8 @@ if (userName != null && SecurityContextHolder.getContext().getAuthentication()==
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken=
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         usernamePasswordAuthenticationToken.setDetails(
-                new WebAuthenticationDetailsSource().buildDetails(httpServletRequest)
-        );
+        new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
+
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
     }
 }
@@ -74,6 +76,6 @@ if (userName != null && SecurityContextHolder.getContext().getAuthentication()==
     }
 
     public String getCurrentUsername() {
-        return null;
+        return userName;
     }
 }

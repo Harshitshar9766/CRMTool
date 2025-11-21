@@ -58,4 +58,10 @@ public static ResponseEntity<String> getResponseEntity(String responseMessage, H
         }
         return false;
     }
+
+    public static ResponseEntity<String> getResponeEntity(String responseMessage, HttpStatus httpStatus) {
+return new ResponseEntity<String>("{\"message\": \""+responseMessage+"\"}", httpStatus);
+    }
+
+
 }

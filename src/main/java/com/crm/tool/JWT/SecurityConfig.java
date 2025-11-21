@@ -1,11 +1,9 @@
 package com.crm.tool.JWT;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.proxy.NoOp;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.BeanIds;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -33,7 +31,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> new CorsConfiguration().applyPermitDefaultValues()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/user/login", "/user/signup", "/user/forgotPassword").permitAll()
+                .requestMatchers("/user/login", "/user/signup", "/user/forgotPassword", "/bill/generateReport").permitAll()
                 .anyRequest().authenticated()
                         )
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS ))

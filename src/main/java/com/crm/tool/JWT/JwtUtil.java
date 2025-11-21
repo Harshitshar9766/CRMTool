@@ -69,7 +69,6 @@ public class JwtUtil {
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 10))
                 .signWith(getSignKey() ,SignatureAlgorithm.HS256).compact();
-
     }
 
     public Boolean validateToken(String token, UserDetails userDetails){
