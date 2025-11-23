@@ -44,7 +44,7 @@ public static ResponseEntity<String> getResponseEntity(String responseMessage, H
     public static String getUUID(){
         Date data = new Date();
         long time =  data.getTime();
-        return "BILL" + time;
+        return "BILL-" + time;
     }
 
     public static Boolean isFileExist(String path){

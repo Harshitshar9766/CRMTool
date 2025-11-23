@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static com.itextpdf.text.FontFactory.getFont;
+
 
 @Slf4j
 @Service
@@ -77,7 +77,7 @@ public class BillServiceImpl implements BillService {
                 Document document = new Document();
                 PdfWriter.getInstance(document, new FileOutputStream(CafeConstants.STORE_LOCATION + "\\" + filename + ".pdf"));
                 document.open();
-                setRectaangleInPdf(document);
+                setRectangleInPdf(document);
 
                 // print pdf Header
                 Paragraph chunk = new Paragraph("Cafe Management System", getFont("Header"));
@@ -95,9 +95,13 @@ public class BillServiceImpl implements BillService {
 
 
                 // Print table data
-                JSONArray jsonArray = CafeUtil.getJsonArrayFromString((String) requestMap.get("productDetails"));
+//                JSONArray jsonArray = CafeUtil.getJsonArrayFromString((String) requestMap.get("productDetails"));
+
+                List<Map<String, String>> list = (List<Map<String, String>>)  requestMap.get("ProductDetails");
+                JSONArray jsonArray = new JSONArray(list);
+
                 for (int i = 0; i < jsonArray.length(); i++) {
-                    addRows(table, CafeUtil.getMapFromJson(jsonArray.getString(i)));
+                    addRows(table, CafeUtil.getMapFromJson(jsonArray.get(i).toString()));
                 }
 
                 document.add(table);
@@ -131,7 +135,7 @@ public class BillServiceImpl implements BillService {
                 });
     }
 
-    private void setRectaangleInPdf(Document document) throws DocumentException {
+    private void setRectangleInPdf(Document document) throws DocumentException {
         log.info("Inside setRectaangleInPdf.");
         Rectangle rectangle = new Rectangle(577, 825, 18, 15);
         rectangle.enableBorderSide(1);
@@ -169,6 +173,22 @@ public class BillServiceImpl implements BillService {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    private Font getFont(String type){
+log.info("Inside getFont");
+switch (type){
+    case "Header":
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLDOBLIQUE, 18, BaseColor.BLACK);
+        headerFont.setStyle(Font.BOLD);
+        return headerFont;
+    case "Data":
+        Font dataFont = FontFactory.getFont(FontFactory.TIMES_ROMAN, 11, BaseColor.BLACK);
+        dataFont.setStyle(Font.BOLD);
+        return dataFont;
+    default:
+        return new Font();
+}
     }
 
     private boolean validateResquestMap(Map<String, Object> requestMap) {
